@@ -2,8 +2,6 @@
 
 A simple command-line password manager written in C. This program allows users to securely store, retrieve, and manage passwords associated with specific keys locally.
 
----
-
 ## **Features**
 
 - Add new passwords.
@@ -12,16 +10,12 @@ A simple command-line password manager written in C. This program allows users t
 - Save passwords persistently in a file (`passwords.txt`).
 - User-friendly commands with help instructions.
 
----
-
 ## **Getting Started**
 
 ### **Prerequisites**
 
 - A C compiler (e.g., GCC or Clang).
 - Basic understanding of the command line.
-
----
 
 ### **Setup Instructions**
 
@@ -43,8 +37,6 @@ A simple command-line password manager written in C. This program allows users t
    ./pm
    ```
 
----
-
 ### **Usage**
 
 #### **Commands**
@@ -55,8 +47,6 @@ A simple command-line password manager written in C. This program allows users t
 | `list`                 | List all saved passwords.                             | `list`                          |
 | `find <key>`           | Retrieve the password associated with a specific key. | `find email`                    |
 | `help`                 | Display the list of available commands.               | `help`                          |
-
----
 
 ## **Example**
 
@@ -84,8 +74,6 @@ A simple command-line password manager written in C. This program allows users t
 ./pm help
 ```
 
----
-
 ## **Contributing**
 
 Contributions are welcome! To contribute:
@@ -104,8 +92,6 @@ Contributions are welcome! To contribute:
    git push origin feature-name
    ```
 5. Open a pull request.
-
----
 
 ## **Future Enhancements**
 
