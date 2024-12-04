@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <string.h>
+#include <windows.h>
 
-#define MAX_KEY_LENGTH 20
-#define MAX_PASSWORD_LENGTH 20
+#define MAX_KEY_LENGTH 100
+#define MAX_PASSWORD_LENGTH 100
 #define PASSWORD_DELIMITER ':'
-#define MAX_PASSWORDS 5
+#define MAX_PASSWORDS 200
 #define PASSWORD_FILE "passwords.txt"
 
 int isAddNewCommand(const char *str);
@@ -16,6 +17,8 @@ void printWelcomeMessage();
 void printCommands();
 void loadPasswords(struct Password *pwds, int *pos);
 void savePasswords(const struct Password *pwds, int pos);
+void copyToClipboard(const char *str);
+void getExecutableDirectory(char *buffer, size_t bufferSize);
 
 struct Password
 {
@@ -46,8 +49,19 @@ int main(int argc, char const *argv[])
         struct Password pwd = parsePassword(argv[2]);
         if (pos < MAX_PASSWORDS)
         {
+            // check for duplicate key
+            for (int i = 0; i < pos; i++)
+            {
+                if (strcmp(pwd.key, pwds[i].key) == 0)
+                {
+                    printf("Duplicate Key");
+                    return EXIT_FAILURE;
+                }
+            }
+            
             pwds[pos++] = pwd;
             savePasswords(pwds, pos);
+            printf("Password saved.");
         }
         else
         {
@@ -59,7 +73,7 @@ int main(int argc, char const *argv[])
     {
         for (int i = 0; i < pos; i++)
         {
-            printf("%s: %s\n",pwds[i].key, pwds[i].pwd);
+            printf("%s\n",pwds[i].key);
         }
     }
 
@@ -77,7 +91,9 @@ int main(int argc, char const *argv[])
         {
             if (strcmp(argv[2], pwds[i].key) == 0)
             {
-                printf("Found saved password: %s", pwds[i].pwd);
+                printf("Found saved password for %s\n", pwds[i].key);
+                copyToClipboard(pwds[i].pwd);
+                printf("Password copied to clipboard.");
                 found = 1;
                 break;
             }
@@ -162,12 +178,11 @@ void printCommands()
 
     printf("2. List All Saved Passwords:\n");
     printf("   Command: pwdm list\n");
-    printf("   Description: Displays all saved passwords in the format <key>:<password>.\n\n");
 
     printf("3. Find a Password:\n");
     printf("   Command: pwdm find <key>\n");
     printf("   Example: pwdm find email\n");
-    printf("   Description: Searches for the password associated with the specified key.\n\n");
+    printf("   Description: Searches for the password associated with the specified key and saves it in clipboard.\n\n");
 
     printf("4. Help:\n");
     printf("   Command: pwdm help\n");
@@ -184,14 +199,19 @@ void printCommands()
 
 void loadPasswords(struct Password *pwds, int *pos)
 {
-    FILE *file = fopen(PASSWORD_FILE, "r");
+    char exeDirectory[MAX_PATH];
+    getExecutableDirectory(exeDirectory, sizeof(exeDirectory));
+    char filePath[MAX_PATH];
+    snprintf(filePath, sizeof(filePath), "%s\\passwords.txt", exeDirectory);
+
+    FILE *file = fopen(filePath, "a+");
 
     if (file == NULL)
     {
         return;
     }
 
-    char line[40];
+    char line[MAX_PASSWORD_LENGTH + MAX_KEY_LENGTH];
     while(fgets(line, sizeof(line), file) != NULL)
     {
         if(*pos >= MAX_PASSWORDS)
@@ -208,7 +228,12 @@ void loadPasswords(struct Password *pwds, int *pos)
 
 void savePasswords(const struct Password *pwds, int pos)
 {
-    FILE *file = fopen(PASSWORD_FILE, "w");
+    char exeDirectory[MAX_PATH];
+    getExecutableDirectory(exeDirectory, sizeof(exeDirectory));
+    char filePath[MAX_PATH];
+    snprintf(filePath, sizeof(filePath), "%s\\passwords.txt", exeDirectory);
+
+    FILE *file = fopen(filePath, "w");
     if (file == NULL)
     {
         printf("Error opening file to save passwords.\n");
@@ -221,4 +246,52 @@ void savePasswords(const struct Password *pwds, int pos)
     }
 
     fclose(file);
+}
+
+void copyToClipboard(const char *str)
+{
+    // open the clipboard
+    if(!OpenClipboard(NULL))
+    {
+        fprintf(stderr, "Failed to open clipboard\n");
+        return;
+    }
+
+    EmptyClipboard();
+
+    // Allocate global memory for the string
+    size_t length = strlen(str) + 1;
+    HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, length);
+    
+    if(!hMem)
+    {
+        CloseClipboard();
+        fprintf(stderr, "Failed to allocate global memory.\n");
+        return;
+    }
+
+    // Copy the string to the allocated memory
+    memcpy(GlobalLock(hMem), str, length);
+    GlobalUnlock(hMem);
+
+    // Set the clipboard data
+    SetClipboardData(CF_TEXT, hMem);
+
+    CloseClipboard();
+}
+
+void getExecutableDirectory(char *buffer, size_t bufferSize)
+{
+    // Get the full path of the executable
+    GetModuleFileName(NULL, buffer, bufferSize);
+
+    // Find the last backslash ('\') to isolate the directory
+    for (int i = strlen(buffer) - 1; i >= 0; i--)
+    {
+        if (buffer[i] == '\\')
+        {
+            buffer[i] = '\0'; // Terminate the string at the last backslash
+            break;
+        }
+    }
 }
